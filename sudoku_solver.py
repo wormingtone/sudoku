@@ -1,0 +1,3 @@
+#naked single
+
+#hidden single
