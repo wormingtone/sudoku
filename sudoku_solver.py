@@ -23,7 +23,7 @@ class SudokuSolver:
         self.columns = []
         self.squares = []
 
-        #updates possibles with given digits before making houses out of possibles
+        #updates possibles with given digits before making houses out of possibles!
 
         for row in range(9):
             self.rows.append(self.possibles[row])
