@@ -70,29 +70,37 @@ class SudokuSolver:
 
         #update squares
 
+    def find_naked_single(self):
+        for row in self.possiblesByCell:
+            for column in self.possiblesByCell:
+                if self.possiblesByCell[row][column].len() == 1:
+                    self.update_grid(row, column, self.possiblesByCell[row][column][0])
 
-    #use separate driver method, or just have the method take no coordinate parameter and iterate over grid itself?
-    def find_naked_single(self, i, j):
-        if self.possiblesByCell[i, j].len() == 0:
-            self.grid[i, j] = self.possiblesByCell[i, j][0]
-            #update
+    def find_hidden_single(self):
 
-    def find_hidden_single(self, list):
+        #get the remaining candidate digits for the house
         for houseType in range(3):
             for houseNum in range(9):
-                remainingDigits = self.possiblesByHouse[houseType, houseNum]
+                remainingDigits = self.possiblesByHouse[houseType][houseNum]
+                cells = self.getCellsInHouse(houseType, houseNum)
 
-                # if it occurs only once in house
-                digitCount = 0
+
+                #for each candidate digit, count its occurrences over every cell in the house
                 for digit in remainingDigits:
-                    for cell in self.houses[houseType,houseNum]:
-                        if digit == cell:
+                    digitCount = 0
+
+                    for cell in cells:
+                        cellPossibles = self.houses[cell[0]][cell[1]]
+                        if digit in cellPossibles:
                             digitCount += 1
+
+                #if the digit has only one possible location in house, fill in that grid cell
                 if digitCount == 1:
-                    sRemove(self.houses[houseType,houseNum], digit)
+                    self.update_grid(cell[0], cell[1], digit)
 
     #TODO naked pair
-    #
+    #If there is a naked pair of digits A, B in a house then neither A nor B is a candidate possible in any other
+    #cell in that house
 
     #TODO locked candidates
     #(1) "If in a block all candidates of a certain digit are confined to a row or column, that digit cannot appear
@@ -108,21 +116,57 @@ class SudokuSolver:
         #remove that digit from the possibles in that row or column outside of that square
         for squareIndex in range(9):
             possibleDigits = self.possiblesByHouse[2, squareIndex]
-                for digit in possibleDigits:
+            for digit in possibleDigits:
+                possibleCells = self.getPossibleCellsForDigitInHouse(digit, 2, squareIndex)
+                #there should always be at least one cell in possibleCells
+                row = possibleCells[0][0]
+                column = possibleCells[0][1]
 
+                sameRowFlag = True
+                sameColumnFlag = True
+
+                #all cells in same row?
+                for cell in possibleCells:
+                    if cell[0] != row:
+                        sameRowFlag = False
+                        break
+
+                #all cells in same column?
+                for cell in possibleCells:
+                    if cell[1] != column:
+                        sameColumnFlag = False
+                        break
+
+                if sameRowFlag:
+                    #remove note from all other cells in that row
+                    firstColumnInSquare = (squareIndex % 3)*3
+                    rowSet = set(range(1,10))
+                    squareSet = set(range(firstColumnInSquare, firstColumnInSquare + 2))
+
+                    for columnIndex in rowSet-squareSet:
+                        sRemove(self.possiblesByCell[row][columnIndex], digit)
+
+                if sameColumnFlag:
+                    #remove note from all other cells in that column
+                    firstRowInSquare = (squareIndex // 3) * 3
+                    columnSet = set(range(1,10))
+                    squareSet = set(range(firstRowInSquare, firstRowInSquare + 2))
+
+                    for rowIndex in columnSet-squareSet:
+                        sRemove(self.possiblesByCell[rowIndex][column], digit)
 
 
     #TODO hidden pair
-    #if there is a pair of digits that can only exist in 2 cells in a house, those two cells cannot contain any other
-    #values
+    #if there is a pair of digits that can only exist in 2 cells in a house, you can eliminate all other candiate
+    #possibles for those two cells
 
-    def hiddenPairUpdate(self):
+    def hiddenPairUpdate2(self):
 
         #find one or more pairs in a given house
         def findPairs(houseType, houseNum):
             digitCounts = {}
             remainingDigits = self.possiblesByHouse[houseType, houseNum]
-            for remainingDigit in remainingDigits
+            for remainingDigit in remainingDigits:
                 digitCounts.update(remainingDigit, 0)
 
             #count occurences of digits in houses
@@ -130,34 +174,62 @@ class SudokuSolver:
                 for possible in cellPossibles:
                     digitCounts.update(possible, digitCounts[possible]+1)
 
-            #identify which digits are pairs
+            #identify which digits occur exactly twice
             pairedNumbers = []
             for key in remainingDigits:
                 if digitCounts[key] == 2:
                     pairedNumbers.add(key)
 
-            #find which cells are paired
+            #find which cells cells (if any) contain the pairs
+            #get the lists of which cells contain a paired digit, then check for overlap
+            for digit in pairedNumbers:
+                self.getPossibleCellsForDigitInHouse(digit, houseType, houseNum)
+
+
             cellsWithPairs = {}
             for number in pairedNumbers:
                 cellsWithPairs.update(number, [])
 
             for cell in self.houses[houseType, houseNum]:
-                if
+                pass
 
+    #if there is a pair of digits that can only exist in 2 cells in a house, you can eliminate all other candiate
+    #possibles for those two cells
 
+    def hiddenPairUpdate(self):
 
-
-                #find hidden pair
         for houseType in range(3):
             for houseNum in range(9):
-                digitCounts = {}
-                for remainingDigit in self.possiblesByHouse[houseType, houseNum]
-                    digitCounts.update(remainingDigit, 0)
 
-                for digit in remainingDigits:
-                    for cell in self.houses[houseType,houseNum]:
-                        if digit == cell:
-                            digitCount += 1
+                #create dictionary to store the locations of each possible digit in a house
+                digit2CellCoords = {}
+                for possibleDigit in self.possiblesByHouse[houseType][houseNum]:
+                    digit2CellCoords.update(possibleDigit, [])
+
+                #add the locations of the digits that occur exactly twice
+                digitPairs = {}
+                for digit, coords in digit2CellCoords.items():
+                    if coords.len == 2:
+                        digitPairs.update(digit, coords)
+
+                setOfPairs = {}
+
+                #find any two cells containing a pair
+                for digit, coords in digitPairs.items():
+                    for digit2, coords2 in digitPairs.items():
+                        if digit != digit2:
+                            if coords == coords2:
+                                for cell in coords:
+
+                                    #remove all other digits
+                                    for possibleCandidate in self.possiblesByCell[cell[0]][cell[1]]:
+                                        if possibleCandidate not in [digit, digit2]:
+                                            sRemove(self.possiblesByCell[cell[0]][cell[1]], possibleCandidate)
+
+
+
+
+
 
     #Checks if adding a given digit to a cell violates the uniqueness conditions on houses.
     #Does not check if it creates an impossible board state, i.e. where no digit can fill an empty cell
@@ -236,6 +308,7 @@ class SudokuSolver:
                     nodeIndices[currentNode] = 0
                     currentNode -= 1
 
+    #returns a list of 9 coordinate pairs for a given house
     def getCellsInHouse(houseType, houseNum):
         if houseType not in [0, 1, 2]:
             raise TypeError("houseTypes are 0 == rows, 1 == columns, 2 == squares")
@@ -256,11 +329,14 @@ class SudokuSolver:
         return cells
 
 
-    def getPossibleCellsForDigitInHouse(digit, houseType, houseNum):
+    def getPossibleCellsForDigitInHouse(self, digit, houseType, houseNum):
         occurences = []
 
-        cellsInHouse = getCellsInHouse(houseType, houseNum)
+        cellsInHouse = self.getCellsInHouse(houseType, houseNum)
 
+        for cell in cellsInHouse:
+            if digit in self.possiblesByCell[cell[0]][cell[1]]:
+                occurences.append(cell)
 
 
 
@@ -284,8 +360,8 @@ def square_to_coords(square_index):
 
 def sRemove(l, element): #TODO
     if not isinstance(l, list):
-        pass
-       # throw new IllegalArgumentException
+        raise TypeError("Trying to remove from something that isn't a list")
+
     if l.contains(element):
        l.remove(element)
 
