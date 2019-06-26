@@ -1,8 +1,8 @@
 import numpy as np
 
+
 class SudokuSolver:
     """doc string goes here"""
-
 
     def __init__(self):
 
@@ -88,6 +88,24 @@ class SudokuSolver:
 
     #TODO naked pair
     #
+
+    #TODO locked candidates
+    #(1) "If in a block all candidates of a certain digit are confined to a row or column, that digit cannot appear
+    #outside of that block in that row or column."
+    #
+    #(2)"Locked Candidates Type 2 works exactly the other way round: If in a row (or column) all candidates of
+    # a certain digit are confined to one block, that candidate that be eliminated from all other cells in that block."
+
+    def lockedCandidatesUpdate(self):
+        #type (1) first
+        #for each possible digit in a square, get the coords of that digit's occurence
+        #if they are all in the same row or column
+        #remove that digit from the possibles in that row or column outside of that square
+        for squareIndex in range(9):
+            possibleDigits = self.possiblesByHouse[2, squareIndex]
+                for digit in possibleDigits:
+
+
 
     #TODO hidden pair
     #if there is a pair of digits that can only exist in 2 cells in a house, those two cells cannot contain any other
@@ -212,6 +230,32 @@ class SudokuSolver:
                     self.grid[currentTriple[0], currentTriple[1]] = 0
                     nodeIndices[currentNode] = 0
                     currentNode -= 1
+
+    def getCellsInHouse(houseType, houseNum):
+        if houseType not in [0, 1, 2]:
+            raise TypeError("houseTypes are 0 == rows, 1 == columns, 2 == squares")
+
+        cells = []
+
+        if houseType == 0:
+            for column in range(9):
+                cells.append([houseNum, column])
+
+        if houseType == 1:
+            for row in range(9):
+                cells.append(row, houseNum)
+
+        if houseType == 2:
+            cells = square_to_coords(houseNum)
+
+        return cells
+
+
+    def getPossibleCellsForDigitInHouse(digit, houseType, HouseNum):
+        occurences = []
+
+
+
 
 
 
