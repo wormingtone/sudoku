@@ -155,47 +155,8 @@ class SudokuSolver:
                     for rowIndex in columnSet-squareSet:
                         sRemove(self.possiblesByCell[rowIndex][column], digit)
 
-
-    #TODO hidden pair
     #if there is a pair of digits that can only exist in 2 cells in a house, you can eliminate all other candiate
     #possibles for those two cells
-
-    def hiddenPairUpdate2(self):
-
-        #find one or more pairs in a given house
-        def findPairs(houseType, houseNum):
-            digitCounts = {}
-            remainingDigits = self.possiblesByHouse[houseType, houseNum]
-            for remainingDigit in remainingDigits:
-                digitCounts.update(remainingDigit, 0)
-
-            #count occurences of digits in houses
-            for cellPossibles in self.houses[houseType, houseNum]:
-                for possible in cellPossibles:
-                    digitCounts.update(possible, digitCounts[possible]+1)
-
-            #identify which digits occur exactly twice
-            pairedNumbers = []
-            for key in remainingDigits:
-                if digitCounts[key] == 2:
-                    pairedNumbers.add(key)
-
-            #find which cells cells (if any) contain the pairs
-            #get the lists of which cells contain a paired digit, then check for overlap
-            for digit in pairedNumbers:
-                self.getPossibleCellsForDigitInHouse(digit, houseType, houseNum)
-
-
-            cellsWithPairs = {}
-            for number in pairedNumbers:
-                cellsWithPairs.update(number, [])
-
-            for cell in self.houses[houseType, houseNum]:
-                pass
-
-    #if there is a pair of digits that can only exist in 2 cells in a house, you can eliminate all other candiate
-    #possibles for those two cells
-
     def hiddenPairUpdate(self):
 
         for houseType in range(3):
@@ -211,8 +172,6 @@ class SudokuSolver:
                 for digit, coords in digit2CellCoords.items():
                     if coords.len == 2:
                         digitPairs.update(digit, coords)
-
-                setOfPairs = {}
 
                 #find any two cells containing a pair
                 for digit, coords in digitPairs.items():
