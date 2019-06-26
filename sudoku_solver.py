@@ -36,6 +36,9 @@ class SudokuSolver:
         #feed in initial given values with a series of updates
 
         for row in range(9):
+            row_list = []
+            for column in range(9):
+                row_list.append(self.possiblesByCell[row][column])
             self.rows.append(self.possiblesByCell[row])
 
         for column in range(9):
@@ -44,7 +47,9 @@ class SudokuSolver:
                 column_list.append(self.possiblesByCell[row, column])
 
         for square in range(9):
-            self.squares[square] = square_to_coords(square)
+            coords = square_to_coords(square)
+            for coordPair in coords:
+                self.squares[square].append(self.possiblesByCell[coordPair[0]][coordPair[1]])
 
 
     def update_grid(self, i, j, digit):
@@ -251,15 +256,10 @@ class SudokuSolver:
         return cells
 
 
-    def getPossibleCellsForDigitInHouse(digit, houseType, HouseNum):
+    def getPossibleCellsForDigitInHouse(digit, houseType, houseNum):
         occurences = []
 
-
-
-
-
-
-
+        cellsInHouse = getCellsInHouse(houseType, houseNum)
 
 
 
@@ -278,7 +278,7 @@ def square_to_coords(square_index):
 
     for row in range(i + 3):
         for column in range(j + 3):
-            coords_list.append((row, column))
+            coords_list.append([row, column])
 
     return coords_list
 
