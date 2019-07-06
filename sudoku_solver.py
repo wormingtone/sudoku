@@ -6,7 +6,7 @@ class SudokuSolver:
 
     def __init__(self):
 
-        self.given_digits = [] #list of triples (i, j, digit)
+        self.given_digits = [] #list of triples (i, j, digit) CURRENTLY UNUSED
 
         self.grid = np.array((9, 9), dtype=int)
 
@@ -18,11 +18,11 @@ class SudokuSolver:
 
         for row in range(9):
             for column in range(9):
-                self.possiblesByCell[row, column] = list(range(1,10))
+                self.possiblesByCell[row][column] = list(range(1, 10))
 
-        for houseType in range (3):
-            for houseNum in range (9):
-                self.possiblesByHouse[houseType, houseNum] = list(range(1,10))
+        for houseType in range(3):
+            for houseNum in range(9):
+                self.possiblesByHouse[houseType, houseNum] = list(range(1, 10))
 
         #house types as lists of lists: each type lists its 9 houses,
         #and each house lists the possible values of each cell
@@ -51,7 +51,14 @@ class SudokuSolver:
             for coordPair in coords:
                 self.squares[square].append(self.possiblesByCell[coordPair[0]][coordPair[1]])
 
+    #pass in given values in the form of a 2d array with 0s as empty spaces
+    #TODO exclude invalid arrays
+    def give_initial_digits(self, digit_array):
+        for row in range(9):
+            for column in range(9):
+                self.update_grid(row, column, digit_array[row][column])
 
+    #possiblesByCell is primary, so first update that, then find the relevant houses and update those only
     def update_grid(self, i, j, digit):
         self.grid[i, j] = digit
         self.possiblesByCell[i, j] = []
@@ -61,14 +68,21 @@ class SudokuSolver:
                 break
             if self.rows[i][cell] == digit:
                 self.rows[i].remove(digit)
+                break
 
         for cell in range(self.columns[j]):
             if self.columns[j][cell] > digit:
                 break
             if self.columns[j][cell] == digit:
                 self.columns[j].remove(digit)
+                break
 
-        #update squares
+        #update squares I THINK THIS IS UNNECESSARY???
+
+        #update possiblesByHouse
+        self.possiblesByHouse[0][i].remove(digit)  # update column
+        self.possiblesByHouse[1][j].remove(digit)  # update row
+        self.possiblesByHouse[2][i].remove(digit)  # update square
 
     def find_naked_single(self):
         for row in self.possiblesByCell:
