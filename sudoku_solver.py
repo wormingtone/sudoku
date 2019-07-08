@@ -28,25 +28,31 @@ class SudokuSolver:
 
         #feed in initial given values with a series of updates
 
-        for row in range(9):
-            row_list = []
-            for column in range(9):
-                row_list.append(self.possiblesByCell[row][column])
-            self.rows.append(self.possiblesByCell[row])
+        for row in self.possiblesByCell:
+            # row_list = []
+            # for column in range(9):
+            #     row_list.append(self.possiblesByCell[row][column])
+            self.rows.append(row) #THIS IS WHY!!!!
+
+        # for column in range(9):
+        #     column_list = []
+        #     for row in range(9):
+        #         column_list.append(self.possiblesByCell[row][column])
+        #     self.columns.append(column_list)
 
         for column in range(9):
-            column_list = []
-            for row in range(9):
-                column_list.append(self.possiblesByCell[row][column])
-            self.columns.append(column_list)
+            self.columns.append([self.possiblesByCell[row][column] for row in range(9)])
+
+        # for square in range(9):
+        #     square_list = []
+        #     coords = square_to_coords(square)
+        #     for coordPair in coords:
+        #         square_list.append(self.possiblesByCell[coordPair[0]][coordPair[1]])
+        #     self.squares.append(square_list)
 
         for square in range(9):
-            square_list = []
-            coords = square_to_coords(square)
-            for coordPair in coords:
-                square_list.append(self.possiblesByCell[coordPair[0]][coordPair[1]])
-            self.squares.append(square_list)
-        cheese = []
+            self.squares.append([self.possiblesByCell[coord_pair[0]][coord_pair[1]]
+                                 for coord_pair in square_to_coords(square)])
 
     #pass in given values in the form of a 2d array with 0s as empty spaces
     #TODO exclude invalid arrays
@@ -64,23 +70,31 @@ class SudokuSolver:
         self.possiblesByCell[i][j] = []
 
         #pruning away from the possibles
-        for set_of_possibles in self.rows[i]:
-            for cell in set_of_possibles:
-                if cell > digit:
-                    break
-                if cell == digit:
-                    sRemove(set_of_possibles, digit)
-                    break
+        #does unnecessary iterations because it doesn't break far enough up
+        # for set_of_possibles in self.rows[i]:
+        #     for cell in set_of_possibles:
+        #         if cell > digit:
+        #             break
+        #         if cell == digit:
+        #             sRemove(set_of_possibles, digit)
+        #             break
 
-        for set_of_possibles in self.columns[j]:
-            for cell in set_of_possibles:
-                if cell > digit:
-                    break
-                if cell == digit:
-                    sRemove(set_of_possibles, digit)
-                    break
+        for cell in self.rows[i]:
+            sRemove(cell, digit)
 
-        # TODO this nonsense
+        # for set_of_possibles in self.columns[j]:
+        #     for cell in set_of_possibles:
+        #         if cell > digit:
+        #             break
+        #         if cell == digit:
+        #             sRemove(set_of_possibles, digit)
+        #             break
+
+        for cell in self.columns[j]:
+            sRemove(cell, digit)
+
+        #when a new digit is added to the grid, this is updated in rows but not columns or squares. Why?
+
         # for set_of_possibles in self.squares[coords_to_square(i, j)]:
         #     for cell in set_of_possibles:
         #         if cell > digit:
@@ -88,7 +102,9 @@ class SudokuSolver:
         #         if cell == digit:
         #             sRemove(set_of_possibles, digit)
         #             break
-        #update squares I THINK THIS IS UNNECESSARY??? IT IS DEFINITELY NECESSARY!
+
+        for cell in self.squares[coords_to_square(i, j)]:
+            sRemove(cell, digit)
 
         #update possiblesByHouse
         self.possiblesByHouse[0][i].remove(digit)  # update column
@@ -327,7 +343,7 @@ class SudokuSolver:
 
 #given a cell's coordinates, find the square it is in.
 def coords_to_square(i, j):
-    return (i // 3) + j % 3
+    return 3 * (i // 3) + j % 3
 
 # return a list 9 coord pairs for a given square
 def square_to_coords(square_index):
