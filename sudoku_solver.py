@@ -80,6 +80,7 @@ class SudokuSolver:
                     sRemove(set_of_possibles, digit)
                     break
 
+        # TODO this nonsense
         # for set_of_possibles in self.squares[coords_to_square(i, j)]:
         #     for cell in set_of_possibles:
         #         if cell > digit:
