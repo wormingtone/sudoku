@@ -6,23 +6,16 @@ class SudokuSolver:
 
     def __init__(self):
 
-        self.given_digits = [] #list of triples (i, j, digit) CURRENTLY UNUSED
+        #self.grid = np.array((9, 9), dtype=int)
+        self.grid = [[0 for row in range(9)] for column in range(9)]
 
-        self.grid = np.array((9, 9), dtype=int)
+        #[[list(range(1, 10)) for row in range(9)] for column in range(9)]
 
         #given current information, the digits that the cell could take
-        self.possiblesByCell = np.array((9, 9), dtype=list)
+        self.possiblesByCell = [[list(range(1, 10)) for row in range(9)] for column in range(9)]
 
         #the remaining digits needed to complete a house
-        self.possiblesByHouse = np.array((3, 9), dtype=list)
-
-        for row in range(9):
-            for column in range(9):
-                self.possiblesByCell[row][column] = list(range(1, 10))
-
-        for houseType in range(3):
-            for houseNum in range(9):
-                self.possiblesByHouse[houseType, houseNum] = list(range(1, 10))
+        self.possiblesByHouse = [[list(range(1, 10)) for houseNum in range(9)] for houseType in range(3)]
 
         #house types as lists of lists: each type lists its 9 houses,
         #and each house lists the possible values of each cell
@@ -44,12 +37,16 @@ class SudokuSolver:
         for column in range(9):
             column_list = []
             for row in range(9):
-                column_list.append(self.possiblesByCell[row, column])
+                column_list.append(self.possiblesByCell[row][column])
+            self.columns.append(column_list)
 
         for square in range(9):
+            square_list = []
             coords = square_to_coords(square)
             for coordPair in coords:
-                self.squares[square].append(self.possiblesByCell[coordPair[0]][coordPair[1]])
+                square_list.append(self.possiblesByCell[coordPair[0]][coordPair[1]])
+            self.squares.append(square_list)
+        cheese = []
 
     #pass in given values in the form of a 2d array with 0s as empty spaces
     #TODO exclude invalid arrays
@@ -60,24 +57,37 @@ class SudokuSolver:
 
     #possiblesByCell is primary, so first update that, then find the relevant houses and update those only
     def update_grid(self, i, j, digit):
-        self.grid[i, j] = digit
-        self.possiblesByCell[i, j] = []
+        self.grid[i][j] = digit
+        if digit == 0:
+            return
 
-        for cell in range(self.rows[i]):
-            if self.rows[i][cell] > digit:
-                break
-            if self.rows[i][cell] == digit:
-                self.rows[i].remove(digit)
-                break
+        self.possiblesByCell[i][j] = []
 
-        for cell in range(self.columns[j]):
-            if self.columns[j][cell] > digit:
-                break
-            if self.columns[j][cell] == digit:
-                self.columns[j].remove(digit)
-                break
+        #pruning away from the possibles
+        for set_of_possibles in self.rows[i]:
+            for cell in set_of_possibles:
+                if cell > digit:
+                    break
+                if cell == digit:
+                    sRemove(set_of_possibles, digit)
+                    break
 
-        #update squares I THINK THIS IS UNNECESSARY???
+        for set_of_possibles in self.columns[j]:
+            for cell in set_of_possibles:
+                if cell > digit:
+                    break
+                if cell == digit:
+                    sRemove(set_of_possibles, digit)
+                    break
+
+        # for set_of_possibles in self.squares[coords_to_square(i, j)]:
+        #     for cell in set_of_possibles:
+        #         if cell > digit:
+        #             break
+        #         if cell == digit:
+        #             sRemove(set_of_possibles, digit)
+        #             break
+        #update squares I THINK THIS IS UNNECESSARY??? IT IS DEFINITELY NECESSARY!
 
         #update possiblesByHouse
         self.possiblesByHouse[0][i].remove(digit)  # update column
@@ -322,11 +332,11 @@ def coords_to_square(i, j):
 def square_to_coords(square_index):
     coords_list = []
 
-    i = square_index // 3
-    j = square_index % 3
+    i = 3 * (square_index // 3)
+    j = 3 * (square_index % 3)
 
-    for row in range(i + 3):
-        for column in range(j + 3):
+    for row in range(i, i + 3):
+        for column in range(j, j + 3):
             coords_list.append([row, column])
 
     return coords_list
@@ -335,8 +345,8 @@ def sRemove(l, element): #TODO
     if not isinstance(l, list):
         raise TypeError("Trying to remove from something that isn't a list")
 
-    if l.contains(element):
-       l.remove(element)
+    if element in l:
+        l.remove(element)
 
 
 
