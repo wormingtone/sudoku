@@ -1,9 +1,5 @@
-import numpy as np
-
-# TODO add cell class that stores possible values, actual values, coordinates.
-# these can then be arranged into houses.
-
 # Have list of finished cells?
+import numpy as np
 
 class Cell:
     """doc string goes here"""
@@ -11,21 +7,29 @@ class Cell:
         self.row = row
         self.column = column
 
-        self.possibes = list(range(1, 10))
-        self.value # the cell's final value
+        self.possibles = list(range(1, 10))
+        self.value = 0 # the cell's final value
+
+        # TODO check out dictionary literal
+        # TODO what is a literal, e.g. String literal?
+        # perhaps have to update the cells with houses after all cells created?
+        # make function that returns house for given cells
+        self.houses = {}
+
+    def __eq__(self, other):
+        if not isinstance(other, Cell):
+            raise Exception("Other is not a Cell")
+
+        return self.value == other.value and self.possibles == other.possibles
+
 
 class SudokuSolver:
     """doc string goes here"""
 
     def __init__(self):
 
-        # self.grid = np.array((9, 9), dtype=int)
-        self.grid = [[0 for row in range(9)] for column in range(9)]
-
-        # [[list(range(1, 10)) for row in range(9)] for column in range(9)]
-
-        # given current information, the digits that the cell could take
-        self.possiblesByCell = [[list(range(1, 10)) for row in range(9)] for column in range(9)]
+        # give the cell a name when it is created for faster lookup?
+        self.grid = [[Cell(row, column) for row in range(9)] for column in range(9)]
 
         # the remaining digits needed to complete a house
         self.possiblesByHouse = [[list(range(1, 10)) for houseNum in range(9)] for houseType in range(3)]
@@ -39,88 +43,60 @@ class SudokuSolver:
         #list of lists of lists
         self.houses = [self.rows, self.columns, self.squares]
 
-        #feed in initial given values with a series of updates
+        for row in range(9):
+            self.rows.append(self.grid[row])
 
-        for row in self.possiblesByCell:
-            # row_list = []
-            # for column in range(9):
-            #     row_list.append(self.possiblesByCell[row][column])
-            self.rows.append(row) #THIS IS WHY!!!!
-
-        # for column in range(9):
-        #     column_list = []
-        #     for row in range(9):
-        #         column_list.append(self.possiblesByCell[row][column])
-        #     self.columns.append(column_list)
+        #TODO do this once by house?
+        for row in self.rows:
+            for cell in row:
+                cell.houses["row"] = row
 
         for column in range(9):
-            self.columns.append([self.possiblesByCell[row][column] for row in range(9)])
+            self.columns.append([self.grid[row][column] for row in range(9)])
 
-        # for square in range(9):
-        #     square_list = []
-        #     coords = square_to_coords(square)
-        #     for coordPair in coords:
-        #         square_list.append(self.possiblesByCell[coordPair[0]][coordPair[1]])
-        #     self.squares.append(square_list)
+        for column in self.columns:
+            for cell in column:
+                cell.houses["column"] = column
 
         for square in range(9):
-            self.squares.append([self.possiblesByCell[coord_pair[0]][coord_pair[1]]
+            self.squares.append([self.grid[coord_pair[0]][coord_pair[1]]
                                  for coord_pair in square_to_coords(square)])
 
-    #pass in given values in the form of a 2d array with 0s as empty spaces
-    #TODO exclude invalid arrays
+        for square in self.squares:
+            for cell in square:
+                cell.houses["square"] = square
+
+    # pass in given values in the form of a 2d array with 0s as empty spaces
+    # TODO exclude invalid arrays
     def give_initial_digits(self, digit_array):
         for row in range(9):
             for column in range(9):
-                self.update_grid(row, column, digit_array[row][column])
+                if digit_array[row][column] != 0:
+                    self.update_grid(row, column, digit_array[row][column])
 
-    #possiblesByCell is primary, so first update that, then find the relevant houses and update those only
+    # possiblesByCell is primary, so first update that, then find the relevant houses and update those only
     def update_grid(self, i, j, digit):
-        self.grid[i][j] = digit
-        if digit == 0:
-            return
 
-        self.possiblesByCell[i][j].clear()
+        cell = self.grid[i][j]
+        cell.value = digit
+        cell.possibles.clear()
 
-        #pruning away from the possibles
-        #does unnecessary iterations because it doesn't break far enough up
-        # for set_of_possibles in self.rows[i]:
-        #     for cell in set_of_possibles:
-        #         if cell > digit:
-        #             break
-        #         if cell == digit:
-        #             sRemove(set_of_possibles, digit)
-        #             break
+        for house in cell.houses.values():
+            for neighbour in house:
+                sRemove(neighbour.possibles, digit)
 
-        for cell in self.rows[i]:
-            sRemove(cell, digit)
-
-        # for set_of_possibles in self.columns[j]:
-        #     for cell in set_of_possibles:
-        #         if cell > digit:
-        #             break
-        #         if cell == digit:
-        #             sRemove(set_of_possibles, digit)
-        #             break
-
-        for cell in self.columns[j]:
-            sRemove(cell, digit)
-
-        #when a new digit is added to the grid, this is updated in rows but not columns or squares. Why?
-
-        # for set_of_possibles in self.squares[coords_to_square(i, j)]:
-        #     for cell in set_of_possibles:
-        #         if cell > digit:
-        #             break
-        #         if cell == digit:
-        #             sRemove(set_of_possibles, digit)
-        #             break
-
-        #NOT WORKING for possibles[0][0] and digit 4!
-        for cell in self.squares[coords_to_square(i, j)]:
-            sRemove(cell, digit)
+        # updating the possibles of other cells that share a house
+        # for cell in self.rows[i]:
+        #     sRemove(cell.possibes, digit)
+        #
+        # for cell in self.columns[j]:
+        #     sRemove(cell.possibles, digit)
+        #
+        # for cell in self.squares[coords_to_square(i, j)]:
+        #     sRemove(cell.possibles, digit)
 
         #update possiblesByHouse
+        # TODO refactor this
         sRemove(self.possiblesByHouse[0][i], digit)
         # self.possiblesByHouse[0][i].remove(digit)  # update column
         sRemove(self.possiblesByHouse[1][j], digit)
@@ -129,36 +105,35 @@ class SudokuSolver:
         sRemove(self.possiblesByHouse[2][cell_num_within_square(i, j)], digit) # update square TODO fix this
         # self.possiblesByHouse[2][i].remove(digit)  # update square TODO fix this
 
-    # TODO do this with enumerate
     def find_naked_single(self):
-        for row in range(9):
-            for column in range(9):
-                if len(self.possiblesByCell[row][column]) == 1:
-                    self.update_grid(row, column, self.possiblesByCell[row][column][0])
+
+        for row in self.rows:
+            for cell in row:
+                if len(cell.possibles) == 1:
+                    self.update_grid(cell.row, cell.column, cell.possibles[0])
 
     def find_hidden_single(self):
 
-        #get the remaining candidate digits for the house
-        for houseType in self.houses:
-            for houseNum, house in enumerate(houseType):
-                remainingDigits = self.possiblesByHouse[houseType][houseNum]
+        # get the remaining candidate digits for the house
+        for type_index, house_type in enumerate(self.houses):
+            for house_num, house in enumerate(house_type):
+                remaining_digits = self.possiblesByHouse[type_index][house_num]
 
                 cells_in_house = house
 
-                #for each candidate digit, count its occurrences over every cell in the house
-                for digit in remainingDigits:
-                    digitCount = 0
+                # for each candidate digit, count its occurrences over every cell in the house
+                for digit in remaining_digits:
+                    digit_count = 0
 
                     for cell in cells_in_house:
-                        if digit in cell:
-                            digitCount += 1
+                        if digit in cell.possibles:
+                            digit_count += 1
 
-                    #if the digit has only one possible location in house, fill in that grid cell
-                    if digitCount == 1:
-                        cell.clear()
-                        cell.append(digit) #TODO fix this line
+                    # if the digit has only one possible location in house, fill in that grid cell
+                    if digit_count == 1:
+                        self.update_grid(cell.row, cell.column, digit)
 
-    #TODO naked pair
+    #TODO naked pair/triple
     #If there is a naked pair of digits A, B in a house then neither A nor B is a candidate possible in any other
     #cell in that house
 
@@ -265,11 +240,6 @@ class SudokuSolver:
 
         return True
 
-    #Assuming cells have a default value of 0
-    def isCellEmpty(self, cellRow, cellColumn):
-        return self.grid[cellRow, cellColumn] == 0
-
-
     #order spaces to be searched by fewest possibilities first.
     #is this DFS with a feasibility check?
     def exhaustiveSearch(self):
@@ -327,33 +297,11 @@ class SudokuSolver:
                     nodeIndices[currentNode] = 0
                     currentNode -= 1
 
-    #TODO establish if this method is redundant?
-    #returns a list of 9 coordinate pairs for a given house
-    def getCellsInHouse(self, houseType, houseNum):
-        if houseType not in [0, 1, 2]:
-            raise TypeError("houseTypes are 0 == rows, 1 == columns, 2 == squares")
-
-        cells = []
-
-        if houseType == 0:
-            for column in range(9):
-                cells.append(self.possiblesByCell[houseNum][column])
-
-        if houseType == 1:
-            for row in range(9):
-                cells.append(self.possiblesByCell[row][houseNum])
-
-        if houseType == 2:
-            for coord_pair in square_to_coords(houseNum):
-                cells.append(self.possiblesByCell[coord_pair[0]][coord_pair[1]])
-
-        return cells
-
 
     def getPossibleCellsForDigitInHouse(self, digit, houseType, houseNum):
         occurences = []
 
-        cellsInHouse = self.getCellsInHouse(houseType, houseNum)
+        cellsInHouse = self.houses[houseType][houseNum]
 
         for cell in cellsInHouse:
             if digit in self.possiblesByCell[cell[0]][cell[1]]:
